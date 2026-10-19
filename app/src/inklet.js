@@ -23,6 +23,7 @@ import { headingIntent } from './document-toc.js';
 import { groupSearchMatches } from './search-engine.js';
 import { renderMarkup } from './renderers.js';
 import { interfaceFamilies, interfaceThemes, paperFamilies, paperThemes as themes, paneCodeColors } from './appearance.js';
+import { isImagePlaceholder } from './image-references.js';
 
 const iconSet = { FilePlus2, FolderOpen, Save, SaveAll, Download, PanelLeftClose, PanelLeftOpen, Code2, BookOpen, Search, Settings2, Info, Focus, AlignCenter, Undo2, Redo2, Bold, Italic, Strikethrough, Heading2, List, ListOrdered, Quote, ImagePlus, Table2, Sigma, Workflow, Link, Highlighter, X, ChevronUp, ChevronDown, Eraser, Columns2, Rows3, Trash2, FileText, MoreHorizontal, Printer, Check, ZoomIn, ZoomOut, ArrowUpRight, History, Maximize, ArrowUpToLine, CornerUpLeft };
 const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
@@ -36,6 +37,7 @@ const readingFonts = {
   kai: "'LXGW WenKai', 'KaiTi', 'STKaiti', 'Noto Serif SC', 'SimSun', serif",
 };
 const releaseNotes = [
+  ['0.11.3', '保留序号换行，图片占位与缺图保存可确认', '2026-10-19'],
   ['0.11.2', '修复大文档表格加载与宽表横向滚动回弹', '2026-10-17'],
   ['0.11.1', '章节引用支持跳转，技能头部显示属性表', '2026-10-17'],
   ['0.11.0', '按文件记忆阅读位置，新增文首与恢复箭头', '2026-10-16'],
@@ -224,7 +226,8 @@ document.querySelector('#app').innerHTML = `
     <fieldset class="code-colors-settings"><legend>代码配色</legend><label class="select-setting" for="code-color-language">编程语言<select id="code-color-language"><option value="default">所有语言</option>${codeLanguages.filter(([value]) => value !== 'plaintext').map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}</select></label><div class="code-colors-grid">${Object.entries(codeColorLabels).map(([key, label]) => `<label>${label}<input type="color" data-code-color="${key}" aria-label="${label}颜色" value="${codeColorDefaults[key]}"></label>`).join('')}</div><button type="button" class="small-command" data-action="code-colors-reset">恢复代码默认配色</button></fieldset>
     <div class="system-settings" ${desktop ? '' : 'hidden'}><button type="button" class="small-command" data-action="default-app">${icon('arrow-up-right')} Markdown 默认打开方式</button></div>
   </div><div class="dialog-footer"><button class="primary-command">完成</button></div></form></dialog>
-  <dialog id="embed-warning-dialog" class="history-error-dialog" aria-labelledby="embed-warning-title"><form method="dialog"><div class="dialog-heading"><h2 id="embed-warning-title">开启图片内嵌保存</h2><button class="icon-button" value="cancel" aria-label="取消开启">${icon('x')}</button></div><div class="history-error-content"><p>开启后，保存或另存为会把本地图片写进 MD。建议先另存副本，保留原始引用。</p><p>Base64数据通常比原图片增加约三分之一体积，源码更长，部分Markdown软件和GitHub页面可能不显示。SVG及BMP会转成PNG，SVG不再保留矢量缩放特性。</p><p>缺图、无法转换或内嵌后超过24MiB时会停止保存。关闭开关只影响后续保存，不会自动还原已内嵌的图片；含图片的段落可能规范化Markdown写法。</p></div><div class="dialog-footer"><button class="small-command" value="cancel">取消</button><button class="primary-command" value="enable">了解并开启</button></div></form></dialog>
+  <dialog id="embed-warning-dialog" class="history-error-dialog" aria-labelledby="embed-warning-title"><form method="dialog"><div class="dialog-heading"><h2 id="embed-warning-title">开启图片内嵌保存</h2><button class="icon-button" value="cancel" aria-label="取消开启">${icon('x')}</button></div><div class="history-error-content"><p>开启后，保存或另存为会把本地图片写进 MD。建议先另存副本，保留原始引用。</p><p>Base64数据通常比原图片增加约三分之一体积，源码更长，部分Markdown软件和GitHub页面可能不显示。SVG及BMP会转成PNG，SVG不再保留矢量缩放特性。</p><p>明确占位引用会保留原文。缺图、无法转换或图片内嵌超限时，会提示并由你选择保留引用后保存；文档本身超限或写入失败仍会停止。关闭开关不会还原已内嵌的图片；含图片的段落可能规范化Markdown写法。</p></div><div class="dialog-footer"><button class="small-command" value="cancel">取消</button><button class="primary-command" value="enable">了解并开启</button></div></form></dialog>
+  <dialog id="save-images-dialog" class="history-error-dialog" aria-labelledby="save-images-title"><form method="dialog"><div class="dialog-heading"><h2 id="save-images-title">部分图片未能内嵌</h2><button class="icon-button" value="cancel" aria-label="取消保存">${icon('x')}</button></div><div class="history-error-content"><p>继续保存会保留以下图片的原引用，正文不会丢弃；其他可读取的图片仍会内嵌。移走原图片后，这些引用可能无法显示。</p><ul id="save-image-issues"></ul></div><div class="dialog-footer"><button class="small-command" value="cancel">返回检查</button><button class="primary-command" value="save">保留原引用并保存</button></div></form></dialog>
   <dialog id="shortcuts-dialog" class="shortcuts-dialog" aria-labelledby="shortcuts-title"><form method="dialog"><div class="dialog-heading"><h2 id="shortcuts-title">自定义快捷键</h2><button class="icon-button" aria-label="关闭快捷键设置">${icon('x')}</button></div><div class="shortcuts-content" id="shortcuts-list"></div><p id="shortcut-error" role="alert"></p><div class="dialog-footer"><button type="button" class="small-command" data-action="shortcuts-reset">恢复默认</button><button type="button" class="primary-command" data-action="shortcuts-save">保存快捷键</button></div></form></dialog>
   <dialog id="export-dialog" class="export-dialog" aria-labelledby="export-title"><form id="export-form"><div class="dialog-heading"><h2 id="export-title">导出文档</h2><button type="button" class="icon-button" data-action="export-close" aria-label="关闭导出">${icon('x')}</button></div><div class="export-content"><label class="select-setting" for="export-format">文件格式<select id="export-format"><option value="pdf">PDF</option><option value="html">HTML</option><option value="docx">Word (.docx)</option></select></label><p id="export-status" role="status"></p></div><div class="dialog-footer"><button type="button" class="small-command" data-action="export-close">取消</button><button type="submit" class="primary-command" id="export-submit">导出</button></div></form></dialog>
   <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title"><form method="dialog">
@@ -1014,6 +1017,20 @@ async function loadDocument(data, restored = false) {
   if (data.historyWarning) toast(data.historyWarning, true);
   await initializeReadingPosition(!restored);
 }
+function confirmImageSave(issues) {
+  const dialog = find('#save-images-dialog');
+  const list = find('#save-image-issues'); list.replaceChildren();
+  for (const issue of issues) {
+    const item = document.createElement('li');
+    item.textContent = (issue.alt ? issue.alt + '：' : '') + issue.displayPath + '；' + issue.message;
+    list.append(item);
+  }
+  dialog.returnValue = '';
+  return new Promise(resolve => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'save'), { once: true });
+    dialog.showModal();
+  });
+}
 async function save(saveAs = false) {
   if (saving || externalRefreshBusy) return false;
   saving = true; updateStatus();
@@ -1027,17 +1044,20 @@ async function save(saveAs = false) {
     await recoveryWriter?.flush().catch(() => {});
     richEditor.flush();
     revision = documentSession.revision;
+    const savingSession = documentSession;
     const source = documentSession.source;
     let text = source;
     let annotations = annotationPayload();
     const resources = [];
-    richEditor.parsed.doc.descendants(node => { if (node.type.name === 'image') resources.push(node.attrs.src); });
+    richEditor.parsed.doc.descendants(node => { if (node.type.name === 'image' && !isImagePlaceholder(node.attrs.src)) resources.push(node.attrs.src); });
     if (settings.embedImages === true) {
       embeddingSave = true; find('#workspace').inert = true; find('#selection-tools').hidden = true; document.activeElement?.blur();
       const { embedDocumentImages } = await import('./embedded-images.js');
       const { prepareEmbeddedAsset } = await import('./export-document.js');
-      prepared = await embedDocumentImages(source, { readAsset: path => call('readAsset', { path }), convertAsset: prepareEmbeddedAsset });
-      if (revision !== documentSession.revision) throw new Error('文档已变化，请重新保存，未写入旧的转换结果。');
+      prepared = await embedDocumentImages(source, { readAsset: path => call('readAsset', { path }), convertAsset: prepareEmbeddedAsset, allowMissingImages: true });
+      if (savingSession !== documentSession || revision !== documentSession.revision) throw new Error('文档已变化，请重新保存，未写入旧的转换结果。');
+      if (prepared.issues.length && !await confirmImageSave(prepared.issues)) return false;
+      if (savingSession !== documentSession || revision !== documentSession.revision) throw new Error('确认期间文档已变化，请重新保存，未写入旧的转换结果。');
       text = prepared.source;
       if (prepared.changes.length) {
         relocated = restoreHighlights(text, serializeHighlights(source, documentSession.highlights));
@@ -1076,7 +1096,7 @@ async function save(saveAs = false) {
     if (oldPath !== result.path) await initializeReadingPosition(false);
     recoveryWriter?.reset();
     if (dirty()) recoveryWriter?.schedule();
-    toast(prepared?.images ? '已保存为内嵌图片的 MD。' : '已保存到本地');
+    toast(prepared?.issues.length ? '正文已保存，未能内嵌的图片已保留原引用。' : prepared?.images ? '已保存为内嵌图片的 MD。' : '已保存到本地');
     return true;
   } catch (error) { showError(error); return false; }
   finally { saving = false; embeddingSave = false; find('#workspace').inert = wasInert; updateStatus(); resumeDocumentSwitch(); }

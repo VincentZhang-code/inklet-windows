@@ -7,19 +7,17 @@ import { renderTableOfContents } from './document-toc.js';
 import { tableColumnWidths } from './table-layout.js';
 import { renderMarkup } from './renderers.js';
 import { codeSpans, codePalette, colorForClass, prepareCodeHighlighting } from './code-highlighting.js';
+import { isImagePlaceholder, readableImagePath } from './image-references.js';
 
 const exportCss = `@page{size:A4;margin:18mm}*{box-sizing:border-box}body{margin:0;color:#26332b;background:white;font-family:"Noto Serif SC","SimSun",serif;font-size:17px;line-height:1.9}main{max-width:800px;margin:0 auto;padding:30px}h1,h2,h3,h4{line-height:1.5;page-break-after:avoid}h1{font-size:28px}h2{font-size:23px;margin-top:1.6em}h3{font-size:20px}p{margin:1em 0;overflow-wrap:anywhere}strong{font-weight:700}a{color:#286b91}blockquote{margin:1.3em 0;border-left:3px solid #9aaf9d;padding-left:18px;color:#566f5b}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.6;margin:20px 0}td,th{border:1px solid #bdcebf;padding:8px 10px;vertical-align:top}th{background:#eef3ed}td p,th p{margin:0}.front-matter-properties{table-layout:fixed;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;break-inside:avoid}.front-matter-properties th{width:28%;text-align:left}.front-matter-properties td{white-space:pre-wrap;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:Consolas,monospace;font-size:13px;line-height:1.65;background:#f3f6f2;border:1px solid #d6dfd3;padding:16px;border-radius:4px;break-inside:avoid}code{font-family:Consolas,monospace}img{max-width:100%;height:auto}svg{max-width:100%;height:auto}.math-block,.diagram-block{text-align:center;margin:20px 0;break-inside:avoid}.math-inline{display:inline-block;vertical-align:middle}.math-inline img{vertical-align:middle;max-height:2.8em}.export-graphic{display:block;margin:0 auto}li p{margin:.2em 0}@media print{main{max-width:none;padding:0}body{font-size:11pt}pre{font-size:9pt}thead{display:table-header-group}a{color:inherit}}`;
 const graphicKey = (kind, value) => kind + '\0' + value;
-const navigationCss = '.document-toc-list{list-style:none;padding:0;margin:16px 0}.document-toc-list li{margin-block:5px}.document-toc-list a{text-decoration:none;overflow-wrap:anywhere}.document-pagebreak{break-after:page;page-break-after:always;height:0;margin:0;border:0}';
+const navigationCss = '.document-toc-list{list-style:none;padding:0;margin:16px 0}.document-toc-list li{margin-block:5px}.document-toc-list a{text-decoration:none;overflow-wrap:anywhere}.document-pagebreak{break-after:page;page-break-after:always;height:0;margin:0;border:0}.image-placeholder{display:block;padding:18px;border:1px dashed #9aaf9d;border-radius:4px;text-align:center;overflow-wrap:anywhere}';
 const noteCss = 'blockquote{padding:14px 18px;border:1px solid #d3e0e6;border-left:3px solid #819eae;border-radius:6px;background:#edf4f6;color:#405766;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;font-size:.92em;line-height:1.85}blockquote>:first-child{margin-top:0}blockquote>:last-child{margin-bottom:0}blockquote strong{color:#29495b}blockquote blockquote{background:transparent;font-size:inherit;border-top:0;border-right:0;border-bottom:0;border-radius:0}';
 const bytesFromBase64 = value => Uint8Array.from(atob(value), character => character.charCodeAt(0));
 const fontAvailability = new Map();
 
-function readableImagePath(value) {
-  try { return decodeURIComponent(value); } catch { return value; }
-}
-
 function missingImageText(path, alt) {
+  if (isImagePlaceholder(path)) return '[图片占位：' + (alt || readableImagePath(path)) + ']';
   return '[图片未导出：' + (alt ? alt + '（' + readableImagePath(path) + '）' : readableImagePath(path)) + ']';
 }
 
@@ -149,6 +147,12 @@ export async function prepareExport(source, { title = '文档', colors = {}, typ
   const jobs = [];
   for (const image of body.querySelectorAll('img')) jobs.push(async () => {
     const path = image.getAttribute('src');
+    if (isImagePlaceholder(path)) {
+      const placeholder = document.createElement('span'); placeholder.className = 'image-placeholder';
+      placeholder.textContent = missingImageText(path, image.getAttribute('alt'));
+      image.replaceWith(placeholder);
+      return;
+    }
     if (!images.has(path) && !missingImages.has(path)) {
       try {
         let dataUrl;
@@ -269,7 +273,7 @@ export async function createWord(snapshot) {
       } else if (child.type.name === 'hard_break') runs.push(new TextRun({ break: 1 }));
       else if (child.type.name === 'image') {
         const issue = snapshot.missingImages?.get(child.attrs.src);
-        runs.push(issue ? new TextRun({ text: missingImageText(issue.displayPath, child.attrs.alt), italics: true }) : imageRun(snapshot.images.get(child.attrs.src), maxWidth));
+        runs.push(isImagePlaceholder(child.attrs.src) ? new TextRun({ text: missingImageText(child.attrs.src, child.attrs.alt), italics: true }) : issue ? new TextRun({ text: missingImageText(issue.displayPath, child.attrs.alt), italics: true }) : imageRun(snapshot.images.get(child.attrs.src), maxWidth));
       }
       else if (child.type.name === 'math_inline') runs.push(imageRun(snapshot.graphics.get(graphicKey('math_inline', child.attrs.tex)), maxWidth));
     });

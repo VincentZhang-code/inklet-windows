@@ -11,7 +11,8 @@ import { codeLanguages, codeSpans, codeStyle, normalizeLanguage, onCodeHighlight
 import { TableViewport } from './table-viewport.js';
 import { renderTableOfContents, headingIntent, resolveHeadingIntent } from './document-toc.js';
 import { sectionReferencePlugin } from './section-references.js';
-import { createElement, Code2 } from 'lucide';
+import { isImagePlaceholder, readableImagePath } from './image-references.js';
+import { createElement, Code2, Image as ImageIcon } from 'lucide';
 
 export class RichEditor {
   constructor(element, options) {
@@ -126,6 +127,17 @@ export class RichEditor {
           return { dom, contentDOM, stopEvent: event => toolbar.contains(event.target), update(next) { if (next.type !== node.type) return false; updateLanguage(next); return true; } };
         },
         image: node => {
+          if (isImagePlaceholder(node.attrs.src)) {
+            const dom = document.createElement('span');
+            dom.className = 'image-placeholder'; dom.dataset.imagePlaceholder = node.attrs.src;
+            dom.contentEditable = 'false'; dom.setAttribute('role', 'img');
+            dom.title = readableImagePath(node.attrs.src);
+            const label = '图片占位：' + (node.attrs.alt || readableImagePath(node.attrs.src));
+            dom.setAttribute('aria-label', label);
+            dom.append(createElement(ImageIcon, { width: 24, height: 24, 'aria-hidden': 'true' }));
+            const text = document.createElement('span'); text.textContent = label; dom.append(text);
+            return { dom, ignoreMutation: () => true };
+          }
           const dom = document.createElement('img');
           dom.dataset.imageSource = node.attrs.src;
           dom.dataset.imageAlt = node.attrs.alt || '图片';

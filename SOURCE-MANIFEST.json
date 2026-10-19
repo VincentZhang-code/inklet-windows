@@ -1,6 +1,6 @@
 {
   "project": "Inklet for Windows",
-  "version": "0.11.2",
+  "version": "0.11.3",
   "license": "MIT",
   "files": [
     {
@@ -21,12 +21,12 @@
     {
       "path": "app/package-lock.json",
       "bytes": 126915,
-      "sha256": "c42300857e7cc26a8e37b9e8e04369cf907cfe15fe54bb668f5f873d5178a560"
+      "sha256": "09044565cc6886c87e09cd4bafb5a3391414c28da074289454e67f5d47f9983e"
     },
     {
       "path": "app/package.json",
       "bytes": 1526,
-      "sha256": "77d258166ac63cd00aceacd06be30a489b3cf155beefeed9434e3c10369b7780"
+      "sha256": "82013edca5abb831460f902de8e2e6e27e3c2f6a986e634b544c79011c1c3ae9"
     },
     {
       "path": "app/public/favicon.svg",
@@ -95,13 +95,13 @@
     },
     {
       "path": "app/src/embedded-images.js",
-      "bytes": 3964,
-      "sha256": "f7cb731973c7ec455c162500c9f522f6092249a0ef4ee943dac693bf4ef921e6"
+      "bytes": 4836,
+      "sha256": "5dbf57299fd1d3c0a8c5024b5af89bf9abaa8889abec5b6fcf2642b26f2164a3"
     },
     {
       "path": "app/src/export-document.js",
-      "bytes": 28260,
-      "sha256": "adb989be9bd75b4ba6fbbf9bfcdd54a312060928a44536957a34e2cbd959801f"
+      "bytes": 28876,
+      "sha256": "8bbec21c8399a3a4bcdf71cd086fde372ccebec3db77c08ca5a4ceec14e9a4c5"
     },
     {
       "path": "app/src/html-tables.js",
@@ -109,14 +109,19 @@
       "sha256": "a9e2ef36ab5f743dbfc395ba34c32cf45b0cb33d810c861139d88eefc7a3adf4"
     },
     {
+      "path": "app/src/image-references.js",
+      "bytes": 310,
+      "sha256": "fde9f5434428d32691ff605ab8ae3157d9fcd8532bf2b6cb41af3108622ed517"
+    },
+    {
       "path": "app/src/inklet.css",
-      "bytes": 59886,
-      "sha256": "d3eb6bc871a4b2ec3a02fb5627b90a8f5cfdc9b52ab0a3d357bef76dbebf6fa8"
+      "bytes": 60511,
+      "sha256": "14884c2f3df2b43c37de144335c6c11977092196942c0de97a18a6fcb29539b6"
     },
     {
       "path": "app/src/inklet.js",
-      "bytes": 129730,
-      "sha256": "a46018b5086200ac01908beb2ac09c8147a9de0f472cea3dfb6ee59fb02752dd"
+      "bytes": 131767,
+      "sha256": "55296ab4a70d1ee01a70ce9c774ef70c0000c0f439931dc27df67b1b8744e0ec"
     },
     {
       "path": "app/src/main.js",
@@ -125,8 +130,8 @@
     },
     {
       "path": "app/src/markdown.js",
-      "bytes": 19394,
-      "sha256": "6655c3b2ae6239b4f3c87ff245b67708fd4ea0add56c065e0ac13392de0ef6b3"
+      "bytes": 19971,
+      "sha256": "54c36deba911fb05649d622fb7918484f707d0c397200b5340971a6b92532c08"
     },
     {
       "path": "app/src/math-worker.js",
@@ -145,8 +150,8 @@
     },
     {
       "path": "app/src/rich-editor.js",
-      "bytes": 17490,
-      "sha256": "e2c7de331a6b167ea0bea3b727e93d7f15d71b726a3c31236a57273d14eb696c"
+      "bytes": 18361,
+      "sha256": "225f57e6428bea1f91ef2fd16691acd4166fa413965cd3305074a8b924f3a4f8"
     },
     {
       "path": "app/src/sample.js",
@@ -200,13 +205,13 @@
     },
     {
       "path": "app/test/export.test.mjs",
-      "bytes": 10076,
-      "sha256": "db37b6ac4c741c26a9d8728b095453bb2e52e2a99db356230e667983c51c4db7"
+      "bytes": 10840,
+      "sha256": "e97acd46ab35acba14134fbf072e231338cc944a2c29bc32150a102493b81e39"
     },
     {
       "path": "app/test/markdown.test.mjs",
-      "bytes": 20823,
-      "sha256": "1265540ebab77178df43eb33fe181399503be8186e4af63195b5da409584593c"
+      "bytes": 24516,
+      "sha256": "8e60e83006c9ac5dc84eb9313f9cfad9bfc645457abc6db44095cbd46d9f593a"
     },
     {
       "path": "app/test/scroll-sync.test.mjs",
@@ -1531,7 +1536,7 @@
     {
       "path": "native/InkletApp.cs",
       "bytes": 48277,
-      "sha256": "26c42edcf14772c0d0b1ae9b92ec1e38d77b9208ecb7223115c9a69fb425ccfb"
+      "sha256": "25fd163d989fffbcade484276caa3e2a8f317c2499528b3910468e283dfa0ae5"
     },
     {
       "path": "native/OpenHistory.cs",
@@ -1560,13 +1565,13 @@
     },
     {
       "path": "QUICKSTART.md",
-      "bytes": 1036,
-      "sha256": "4517abe104d6cf325537a901531c2d9b1e266898332b40670ef531bb4ea154d5"
+      "bytes": 1386,
+      "sha256": "6ced7278e5f3f37fb92435f4db56bd46cec9e1a4859d9e8234fc0f69c6fd4088"
     },
     {
       "path": "README.md",
-      "bytes": 15372,
-      "sha256": "e033ee34291d1aa37bd8052233fc87d102e72bb473796ad67791c8d3a47f7542"
+      "bytes": 16341,
+      "sha256": "d805909e2ad2a89dd4be1eed2d10a3fd4bff1492f1a896fdd1ffc41c62c8a2d4"
     },
     {
       "path": "tools/bootstrap.ps1",
@@ -1589,5 +1594,5 @@
       "sha256": "a6809f27347baa064b5b602062f1054505425dffcef1e4491a437e92d805855e"
     }
   ],
-  "totalBytes": 3546232
+  "totalBytes": 3557916
 }

@@ -9,6 +9,16 @@ function elements(node, name) {
   return [...(node.name === name ? [node] : []), ...(node.elements || []).flatMap(child => elements(child, name))];
 }
 
+test('Word export retains visible alphabetic lines and intentional image placeholders', async () => {
+  const source = 'A. First\nB. Second\nC. Third\n\n![Prototype](placeholder:later)\n';
+  const encoded = await createWord({ title: 'Steps', doc: parseDocument(source).doc, images: new Map(), graphics: new Map(), colors: {} });
+  const archive = await JSZip.loadAsync(Buffer.from(encoded, 'base64'));
+  const content = xml.xml2js(await archive.file('word/document.xml').async('string'));
+  assert.equal(elements(content, 'w:br').length, 2);
+  assert.ok(elements(content, 'w:t').some(node => (node.elements || []).some(child => child.text === '[\u56fe\u7247\u5360\u4f4d\uff1aPrototype]')));
+  assert.equal(elements(content, 'w:drawing').length, 0);
+});
+
 test('Word export creates editable headings, tables, code colors and a genuine DOCX package', async () => {
   const source = '# Heading\n\nText **bold** and _italic_.\n\n| A | B |\n|---|---|\n| one | two |\n\n```python\ndef hello():\n    return 1\n```\n';
   const encoded = await createWord({ title: 'Document', doc: parseDocument(source).doc, images: new Map(), graphics: new Map(), colors: { python: { keyword: '#112233' } } });

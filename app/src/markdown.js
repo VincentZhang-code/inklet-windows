@@ -38,9 +38,14 @@ const paragraph = { ...baseSchema.spec.nodes.get('paragraph'), attrs: { textAlig
   toDOM: node => ['p', textAlignment(node.attrs.textAlign) ? { style: 'text-align:' + node.attrs.textAlign } : {}, 0],
   parseDOM: [{ tag: 'p', getAttrs: element => ({ textAlign: textAlignment(element.style.textAlign || element.getAttribute('align')) }) }],
 };
+const lineBreak = { ...baseSchema.spec.nodes.get('hard_break'),
+  attrs: { soft: { default: false } },
+  toDOM: node => ['br', node.attrs.soft ? { 'data-source-break': 'soft' } : {}],
+  parseDOM: [{ tag: 'br[data-source-break="soft"]', getAttrs: () => ({ soft: true }) }, { tag: 'br' }],
+};
 
 export const schema = new Schema({
-  nodes: baseSchema.spec.nodes.update('paragraph', paragraph).append(tables).append({
+  nodes: baseSchema.spec.nodes.update('paragraph', paragraph).update('hard_break', lineBreak).append(tables).append({
     front_matter: {
       group: 'block', atom: true, selectable: true,
       attrs: { raw: { default: '' }, entries: { default: [] } },
@@ -169,6 +174,7 @@ tokenizer.block.ruler.before('html_block', 'inklet_html_table', (state, start, e
 
 const tokenRules = {
   ...defaultMarkdownParser.tokens,
+  softbreak: { node: 'hard_break', getAttrs: () => ({ soft: true }) },
   table: { block: 'table' },
   thead: { ignore: true },
   tbody: { ignore: true },
@@ -189,6 +195,10 @@ const tokenRules = {
 
 export const serializer = new MarkdownSerializer({
   ...defaultMarkdownSerializer.nodes,
+  hard_break(state, node, parent, index) {
+    if (node.attrs.soft) state.write('\n');
+    else defaultMarkdownSerializer.nodes.hard_break(state, node, parent, index);
+  },
   front_matter(state, node) {
     const generated = '---\n' + stringifyYaml(Object.fromEntries(node.attrs.entries.map(entry => [entry.key, entry.value]))).trimEnd() + '\n---';
     state.write((node.attrs.raw || generated).replace(/(?:\r\n|\n|\r)$/, ''));

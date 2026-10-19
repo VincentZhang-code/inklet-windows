@@ -1,4 +1,4 @@
-# Inklet 0.11.2 for Windows
+# Inklet 0.11.3 for Windows
 
 Extract the complete ZIP, keep all files together, and run Inklet.exe.
 Save your documents and close the previous version before switching versions.
@@ -9,6 +9,9 @@ Settings and recovery data are stored locally; do not delete them during an upda
 - Use the outline or search to navigate. Numbered section references can be clicked.
 - Leading YAML metadata is displayed as a property table; edit it in the source pane.
 - Wide tables retain their horizontal position after search and offscreen reloading.
+- Source line breaks remain visible, including consecutive A/B/C-labelled lines.
+- Explicit image placeholders stay as placeholders and do not block saving.
+- If image embedding fails, review the warning and cancel or save with the original references retained. Document size limits, disk errors and external-file conflicts still block unsafe saves.
 - Local images, math and Mermaid are supported, with HTML/PDF/DOCX export.
 - Keep backups and try important workflows on copies first.
 

@@ -1,4 +1,42 @@
 import { embedDocumentImages } from '../src/embedded-images.js';
+import { isImagePlaceholder } from '../src/image-references.js';
+
+test('explicit image placeholders are preserved without reading files', async () => {
+  const reference = '\u5360\u4f4d\uff1aMD\u8f6cWord\u65f6\u63d2\u5165';
+  const source = '![Prototype](' + reference + ')\n\n![Another](placeholder:later)\n';
+  const result = await embedDocumentImages(source, { readAsset: async () => { throw new Error('Placeholder must not be read'); } });
+  assert.equal(result.source, source);
+  assert.equal(result.placeholders, 2);
+  assert.deepEqual(result.issues, []);
+  assert.equal(isImagePlaceholder(encodeURIComponent(reference)), true);
+  assert.equal(isImagePlaceholder('images/placeholder.png'), false);
+});
+
+test('confirmed missing images preserve references while valid images are embedded', async () => {
+  const source = '# Keep\n\n![Good](good.png)\n\n![Missing](missing.png)\n\n![Again](missing.png)\n\n![Later](placeholder:later)\n';
+  const reads = [];
+  const result = await embedDocumentImages(source, { allowMissingImages: true, readAsset: async reference => {
+    reads.push(reference);
+    if (reference === 'missing.png') throw new Error('File is missing');
+    return { mime: 'image/png', data: 'AQID' };
+  } });
+  assert.deepEqual(reads, ['good.png', 'missing.png']);
+  assert.equal(result.images, 1);
+  assert.equal(result.issues.length, 1);
+  assert.equal(result.issues[0].path, 'missing.png');
+  assert.equal(result.source, source.replace('good.png', 'data:image/png;base64,AQID'));
+});
+
+test('embedding failures decode paths and permit opt-in reference retention without bypassing document size limits', async () => {
+  const source = '![Picture](broken%20image.png)';
+  const result = await embedDocumentImages(source, { allowMissingImages: true, readAsset: async () => { throw new Error('Cannot decode'); } });
+  assert.equal(result.issues[0].displayPath, 'broken image.png');
+  assert.equal(result.source, source);
+  const oversized = await embedDocumentImages('![A](a.png)', { allowMissingImages: true, maxBytes: 32, readAsset: async () => ({ mime: 'image/png', data: 'AQID'.repeat(30) }) });
+  assert.equal(oversized.images, 0);
+  assert.equal(oversized.issues.length, 1);
+  await assert.rejects(embedDocumentImages('A'.repeat(100), { maxBytes: 32, allowMissingImages: true }), /上限/);
+});
 
 test('embedded image conversion leaves unrelated Markdown and image examples untouched', async () => {
   const source = '# Untouched *heading*\n\nA paragraph with **formatting**.\n\n![Picture](../images/picture.png)\n\n```md\n![Example](not-a-file.png)\n```\n\nEnd  \n';
@@ -39,6 +77,28 @@ import { parseDocument, richChange, plainTextChange, schema, serializer, sourceP
 import { DocumentSession, replaceText } from '../../core/document.mjs';
 import { quoteFlowchartLabels } from '../src/renderers.js';
 import { tableColumnWidths } from '../src/table-layout.js';
+
+test('alphabetic lines retain visible source breaks without becoming numeric lists', () => {
+  const source = 'A. **Load**: call `ListItems`.\nB. **Search**: keep filters.\nC. **Save**: preserve text.';
+  const parsed = parseDocument(source);
+  const breaks = [];
+  parsed.doc.descendants(node => { if (node.type.name === 'hard_break') breaks.push(node.attrs.soft); });
+  assert.equal(parsed.doc.firstChild.type.name, 'paragraph');
+  assert.deepEqual(breaks, [true, true]);
+  assert.equal(serializer.serialize(parsed.doc), source);
+});
+
+test('source breaks keep edited lines and leave ordinary numbered lists and code unchanged', () => {
+  const source = 'A. First\nB. Second\nC. Third\n\n1. One\n2. Two\n\n```text\nA. Code\nB. Code\n```\n';
+  const parsed = parseDocument(source);
+  const position = parsed.doc.firstChild.textContent.indexOf('First') + 1;
+  const next = EditorState.create({ doc: parsed.doc }).tr.insertText('Changed', position, position + 5).doc;
+  const change = richChange(source, parsed.doc, next, parsed.ranges);
+  assert.equal(replaceText(source, change), source.replace('First', 'Changed'));
+  assert.equal(parsed.doc.child(1).type.name, 'ordered_list');
+  assert.equal(parsed.doc.child(2).type.name, 'code_block');
+  assert.equal(parsed.doc.child(2).textContent, 'A. Code\nB. Code');
+});
 
 test('valid leading YAML front matter becomes one property-table node', () => {
   const source = '---\nname: html-offline-bundler\ndescription: "Makes CDN prototypes work offline"\ntags: [html, offline]\n---\n\n# Guide\n';
