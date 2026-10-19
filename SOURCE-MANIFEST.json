@@ -274,6 +274,26 @@
       "sha256": "2ec0789063f63afb01729781681ce56a69b164d57e953ad4a3c13a09343ebfeb"
     },
     {
+      "path": "docs/images/reader-diagram.png",
+      "bytes": 401110,
+      "sha256": "eca31cab6c9b2c3ac3e0dd9b86ee8dc3907c45e31abcc1c7980cd2c7760cab2e"
+    },
+    {
+      "path": "docs/images/reader-overview.png",
+      "bytes": 367810,
+      "sha256": "a312f385c051d5c1df96f18bcf6a176f61ec68640b4ade4a77f05a205776dca8"
+    },
+    {
+      "path": "docs/images/reader-table.png",
+      "bytes": 375682,
+      "sha256": "91dbdcf386c6d03f25eb763ab0a410b19799effab094dc2e1bcadc5a58c21bb7"
+    },
+    {
+      "path": "examples/quick-tour.md",
+      "bytes": 1685,
+      "sha256": "3b38ba115d5143bf09ebdd5722704566ca0e03ab07646caf27fe50766cb92a78"
+    },
+    {
       "path": "LICENSE",
       "bytes": 1114,
       "sha256": "e5b7397ed54d25a8c2455ccd17e80ba2acbd4aafdaf311e0d526ed901069141d"
@@ -1545,8 +1565,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 1993,
-      "sha256": "8694ef763486f9bef6eef417847bf5bb6b06559a27bae069550a2ee7649e43da"
+      "bytes": 15424,
+      "sha256": "91b0f391bfaa06623c77041b6d59ee5aec4fa7ff86017c1f22f1eae6b5bbf445"
     },
     {
       "path": "tools/bootstrap.ps1",
@@ -1569,5 +1589,5 @@
       "sha256": "a6809f27347baa064b5b602062f1054505425dffcef1e4491a437e92d805855e"
     }
   ],
-  "totalBytes": 2386565
+  "totalBytes": 3546283
 }
