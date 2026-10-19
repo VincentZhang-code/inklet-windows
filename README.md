@@ -1,6 +1,6 @@
 # Inklet 墨点 · Windows
 
-<img src="assets/inklet.png" alt="Inklet 墨点" width="112" height="112">
+![Inklet 墨点](assets/inklet.png)
 
 > 轻快落笔，顺手成文。
 
@@ -26,9 +26,9 @@ Windows 10/11 x64 · MIT · 当前版本 **v0.11.2 体验版**
 
 ```text
 Markdown 初稿
-	-> 检查标题、表格与图表
-	-> 修改正文和标注重点
-	-> 导出 HTML / PDF / DOCX
+  -> 检查标题、表格与图表
+  -> 修改正文和标注重点
+  -> 导出 HTML / PDF / DOCX
 ```
 
 Inklet 负责编辑、显示和导出，**不是 AI 生成器**，不会替你判断事实是否正确。
@@ -49,7 +49,7 @@ Inklet 负责编辑、显示和导出，**不是 AI 生成器**，不会替你�
 ---
 name: document-review
 description: >-
-	检查需求文档中的字段、流程与待确认事项。
+  检查需求文档中的字段、流程与待确认事项。
 ---
 ```
 
@@ -83,8 +83,7 @@ WebView2 Runtime 和普通 Edge 浏览器不是同一个安装项。缺少运行
 
 **当前程序未签名，Windows 可能提示“未知发布者”。** 请从本仓库 Release 获取文件并核验校验值，不要关闭系统安全检查。体验版仍需在实际环境中验证，不建议作为重要文档的唯一存储位置。
 
-<details>
-<summary>核验 ZIP 的 SHA-256</summary>
+### 核验 ZIP 的 SHA-256
 
 同时下载发布页中的 `SHA256SUMS.txt`，在下载目录运行：
 
@@ -93,8 +92,6 @@ Get-FileHash .\Inklet-0.11.2-Windows-x64.zip -Algorithm SHA256
 ```
 
 将输出与该发布版本的校验文件比较。校验值用于确认文件一致性，不等于代码签名，也不代表没有缺陷。
-
-</details>
 
 升级前先保存文档并退出旧版所有窗口，再使用新版完整目录。不要为了升级而删除本机设置、历史记录或草稿目录。当前没有自动更新服务。
 
@@ -189,9 +186,9 @@ npm --prefix app test
 
 ```text
 Windows 桌面窗口（WinForms + WebView2）
-	-> 编辑界面（CodeMirror + ProseMirror）
-	-> Markdown 解析、导航与显示（markdown-it）
-	-> 本地文件、保存检查、恢复与导出
+  -> 编辑界面（CodeMirror + ProseMirror）
+  -> Markdown 解析、导航与显示（markdown-it）
+  -> 本地文件、保存检查、恢复与导出
 ```
 
 前端使用 Vite 构建。公式由 MathJax 渲染，流程图由 Mermaid 渲染，Word 导出使用 docx。第三方组件各自的许可声明保留在 `licenses/`，不将这些能力描述为从零自研。
@@ -200,15 +197,15 @@ Windows 桌面窗口（WinForms + WebView2）
 
 ```text
 inklet-windows/
-	app/          前端界面、锁定依赖与核心前端测试
-	core/         文档状态、搜索、恢复等共享逻辑及测试
-	native/       Windows 宿主、文件服务与原生测试
-	tools/        依赖准备、构建和测试入口
-	assets/       应用 Logo 与图标
-	examples/     可直接打开的演示文档
-	licenses/     第三方许可声明
-	QUICKSTART.md 简明使用说明
-	LICENSE       MIT 许可证
+  app/          前端界面、锁定依赖与核心前端测试
+  core/         文档状态、搜索、恢复等共享逻辑及测试
+  native/       Windows 宿主、文件服务与原生测试
+  tools/        依赖准备、构建和测试入口
+  assets/       应用 Logo 与图标
+  examples/     可直接打开的演示文档
+  licenses/     第三方许可声明
+  QUICKSTART.md 简明使用说明
+  LICENSE       MIT 许可证
 ```
 
 ## 常见问题
@@ -248,7 +245,7 @@ inklet-windows/
 
 ## 关于作者
 
-**达芬奇Vincent**
+作者：达芬奇Vincent。
 
 | 渠道 | 地址 |
 | --- | --- |

@@ -290,8 +290,8 @@
     },
     {
       "path": "examples/quick-tour.md",
-      "bytes": 1685,
-      "sha256": "3b38ba115d5143bf09ebdd5722704566ca0e03ab07646caf27fe50766cb92a78"
+      "bytes": 1686,
+      "sha256": "62f17104fe5a249148c1253b44a5be00639f99890ec58f3f74e3f69be4311875"
     },
     {
       "path": "LICENSE",
@@ -1565,8 +1565,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 15424,
-      "sha256": "91b0f391bfaa06623c77041b6d59ee5aec4fa7ff86017c1f22f1eae6b5bbf445"
+      "bytes": 15372,
+      "sha256": "e033ee34291d1aa37bd8052233fc87d102e72bb473796ad67791c8d3a47f7542"
     },
     {
       "path": "tools/bootstrap.ps1",
@@ -1589,5 +1589,5 @@
       "sha256": "a6809f27347baa064b5b602062f1054505425dffcef1e4491a437e92d805855e"
     }
   ],
-  "totalBytes": 3546283
+  "totalBytes": 3546232
 }
