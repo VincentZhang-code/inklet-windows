@@ -69,7 +69,8 @@ dialog{border:1px solid #d6e0d6;border-radius:8px;padding:0;color:#304737;backgr
 .rich-pane .ProseMirror blockquote > :last-child { margin-bottom: 0; }
 .rich-pane .ProseMirror blockquote strong { color: #29495b; font-weight: 700; }
 .rich-pane .ProseMirror blockquote blockquote { margin: 12px 0; padding: 8px 12px; border-top: 0; border-right: 0; border-bottom: 0; border-radius: 0; background: transparent; font-size: inherit; }
-.rich-pane .diagram-block > svg { display: block; width: 100% !important; max-width: none !important; height: auto !important; max-height: none !important; }
+.rich-pane .diagram-block > svg { display: block; width: 80% !important; margin-inline: auto; max-width: none !important; height: auto !important; max-height: none !important; }
+.rich-pane .document-image { display: block; width: 80%; height: auto; margin-inline: auto; }
 .diagram-code-button { position: absolute; top: 4px; right: 4px; z-index: 1; width: 28px; height: 28px; }
 .diagram-code-button svg { width: 15px !important; height: 15px !important; }
 .diagram-block[data-rendered="true"] { cursor: zoom-in; }
@@ -81,6 +82,8 @@ dialog{border:1px solid #d6e0d6;border-radius:8px;padding:0;color:#304737;backgr
 .diagram-viewport { min-height: 0; flex: 1; overflow: auto; padding: 20px; background: #fafdfb; overscroll-behavior: contain; scrollbar-gutter: stable; }
 #diagram-stage { margin: 0 auto; min-height: 40px; color: #52695e; font-size: 12px; }
 #diagram-stage > svg { display: block; width: 100% !important; height: auto !important; max-width: none !important; max-height: none !important; }
+#diagram-stage > img { display: block; width: 100%; height: auto; max-width: none; user-select: none; pointer-events: none; }
+#diagram-viewport { touch-action: none; cursor: grab; }
 @media(max-width:760px) {
 	.diagram-dialog .dialog-heading { padding: 12px; gap: 8px; }
 	.diagram-view-controls { gap: 2px; }

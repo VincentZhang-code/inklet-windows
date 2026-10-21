@@ -18,8 +18,8 @@ using Microsoft.Web.WebView2.WinForms;
 [assembly: System.Reflection.AssemblyProduct("Inklet")]
 [assembly: System.Reflection.AssemblyCompany("泰安市岱岳区清云智数企业管理咨询工作室")]
 [assembly: System.Reflection.AssemblyCopyright("版权所有 © 2026 泰安市岱岳区清云智数企业管理咨询工作室。保留所有权利。")]
-[assembly: System.Reflection.AssemblyVersion("0.11.3.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.11.3.0")]
+[assembly: System.Reflection.AssemblyVersion("0.11.4.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.11.4.0")]
 
 namespace Inklet {
     public sealed class InkletApplication : ApplicationContext {

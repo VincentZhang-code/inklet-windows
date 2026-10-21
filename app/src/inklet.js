@@ -37,6 +37,7 @@ const readingFonts = {
   kai: "'LXGW WenKai', 'KaiTi', 'STKaiti', 'Noto Serif SC', 'SimSun', serif",
 };
 const releaseNotes = [
+  ['0.11.4', '隔离搜索刷新，图表八成显示与单双击分工', '2026-10-21'],
   ['0.11.3', '保留序号换行，图片占位与缺图保存可确认', '2026-10-19'],
   ['0.11.2', '修复大文档表格加载与宽表横向滚动回弹', '2026-10-17'],
   ['0.11.1', '章节引用支持跳转，技能头部显示属性表', '2026-10-17'],
@@ -145,7 +146,8 @@ let dialogApply;
 let toastTimer;
 let readOnlyRecovery = null;
 let openingHistory = false;
-let diagramZoom = 1;
+let diagramZoom = .8;
+let diagramSize = null;
 let diagramRequest = 0;
 let diagramEdit;
 let searchWorker = new Worker(new URL('./search-worker.js', import.meta.url), { type: 'module' });
@@ -271,7 +273,8 @@ const richEditor = new RichEditor(find('#rich-editor'), { ...common, matches: ma
   navigate: reveal,
   diagram: (code, edit) => openDiagramPreview(code, edit).catch(showError),
   change: change => changeDocument(change, 'rich'), edit: openCodeDialog, asset: assetUrl,
-  image: (path, alt) => { find('#image-preview').src = assetUrl(path); find('#image-title').textContent = alt || '图片'; find('#image-dialog').showModal(); },
+  image: (path, alt) => openImagePreview(path, alt).catch(showError),
+  imageSource: (path, alt) => openImageSource(path, alt).catch(showError),
   imageError: (path, image) => { if (desktop && image.isConnected && !/^(?:https?:|data:|\/\/)/i.test(path)) find('#image-access').hidden = false; },
   imageLoaded: () => { if (!find('#rich-editor .image-missing')) find('#image-access').hidden = true; },
   link: url => { if (/^https?:\/\//i.test(url)) call('external', { url }).catch(showError); },
@@ -1237,13 +1240,16 @@ function openCodeDialog(kind, value, apply) {
   find('#edit-title').textContent = titles[kind] || '编辑';
   find('#edit-content').innerHTML = '<label class="editor-label" for="block-input">' + (kind === 'link' ? '链接地址' : '源码') + '</label><textarea id="block-input" spellcheck="false" rows="10"></textarea>';
   find('#block-input').value = value;
+  find('#block-input').readOnly = !apply;
+  const submit = find('#edit-dialog [type="submit"]');
+  if (submit) submit.hidden = !apply;
   if (kind === 'code') {
     const label = document.createElement('label'); label.className = 'select-setting'; label.textContent = '编程语言';
     const select = document.createElement('select'); select.id = 'block-language';
     for (const [key, name] of codeLanguages) select.add(new Option(name, key));
     label.append(select); find('#edit-content').prepend(label);
   }
-  dialogApply = () => apply(find('#block-input').value, find('#block-language')?.value || 'plaintext');
+  dialogApply = apply ? () => apply(find('#block-input').value, find('#block-language')?.value || 'plaintext') : null;
   find('#edit-dialog').showModal();
   find('#block-input').focus();
 }
@@ -1251,8 +1257,9 @@ function openCodeDialog(kind, value, apply) {
 function resizeDiagramPreview() {
   if (!find('#diagram-dialog').open) return;
   const viewport = find('#diagram-viewport');
-  const width = Math.max(180, viewport.clientWidth - 40);
+  const width = diagramSize?.width || Math.max(180, viewport.clientWidth - 40);
   find('#diagram-stage').style.width = Math.round(width * diagramZoom) + 'px';
+  find('#diagram-stage').style.height = diagramSize ? Math.round(diagramSize.height * diagramZoom) + 'px' : '';
   find('#diagram-zoom').textContent = Math.round(diagramZoom * 100) + '%';
   find('[data-action="diagram-zoom-out"]').disabled = diagramZoom <= .25;
   find('[data-action="diagram-zoom-in"]').disabled = diagramZoom >= 4;
@@ -1260,15 +1267,51 @@ function resizeDiagramPreview() {
 
 async function openDiagramPreview(code, edit) {
   const request = ++diagramRequest;
-  diagramZoom = 1; diagramEdit = edit;
+  diagramZoom = .8; diagramEdit = edit; diagramSize = null;
+  find('#diagram-title').textContent = '图表';
+  find('[data-action="diagram-source"]').hidden = !edit;
   find('#diagram-stage').textContent = '正在准备图表...';
   if (!find('#diagram-dialog').open) find('#diagram-dialog').showModal();
   resizeDiagramPreview();
   const markup = await renderMarkup('mermaid', code, themes[settings.rightTheme]?.family === 'dark' ? 'dark' : 'neutral');
   if (request !== diagramRequest || !find('#diagram-dialog').open) return;
   find('#diagram-stage').innerHTML = markup;
+  const box = find('#diagram-stage > svg')?.viewBox.baseVal;
+  if (box?.width > 0 && box.height > 0) diagramSize = { width: box.width, height: box.height };
   find('#diagram-viewport').scrollTop = 0; find('#diagram-viewport').scrollLeft = 0;
   resizeDiagramPreview();
+}
+async function openImageSource(path, alt) {
+  if (!/\.svg(?:[?#]|$)|^data:image\/svg\+xml/i.test(path)) { await openImagePreview(path, alt); return; }
+  const owner = recoveryDocumentId;
+  const asset = await call('readAsset', { path });
+  if (owner !== recoveryDocumentId) return;
+  if (asset.mime !== 'image/svg+xml') { await openImagePreview(path, alt); return; }
+  const text = new TextDecoder().decode(Uint8Array.from(atob(asset.data), character => character.charCodeAt(0)));
+  const xml = new DOMParser().parseFromString(text, 'image/svg+xml');
+  if (xml.querySelector('parsererror') || xml.documentElement.localName !== 'svg') throw new Error('SVG 源码格式不可用。');
+  let source = xml.documentElement.getAttribute('content') || text;
+  if (/^%3C/i.test(source)) { try { source = decodeURIComponent(source); } catch {} }
+  if (find('#diagram-dialog').open) find('#diagram-dialog').close();
+  openCodeDialog('svg', source, null);
+  find('#edit-title').textContent = /^\s*<mxfile\b/.test(source) ? '查看 draw.io 源码（只读）' : '查看 SVG 源码（只读）';
+}
+async function openImagePreview(path, alt) {
+  const request = ++diagramRequest;
+  diagramZoom = .8; diagramSize = null;
+  const svg = /\.svg(?:[?#]|$)|^data:image\/svg\+xml/i.test(path);
+  diagramEdit = svg ? () => openImageSource(path, alt).catch(showError) : null;
+  find('[data-action="diagram-source"]').hidden = !diagramEdit;
+  find('#diagram-title').textContent = alt || '图片';
+  find('#diagram-stage').textContent = '正在准备图片...';
+  if (!find('#diagram-dialog').open) find('#diagram-dialog').showModal();
+  const image = new Image(); image.alt = alt || '图片'; image.src = assetUrl(path);
+  try { await image.decode(); }
+  catch { if (request === diagramRequest) find('#diagram-stage').textContent = '图片无法显示，请检查文件路径和格式。'; return; }
+  if (request !== diagramRequest || !find('#diagram-dialog').open) return;
+  diagramSize = { width: image.naturalWidth, height: image.naturalHeight };
+  find('#diagram-stage').replaceChildren(image);
+  resizeDiagramPreview(); find('#diagram-viewport').scrollTop = 0; find('#diagram-viewport').scrollLeft = 0;
 }
 function insert(text, replace = true) {
   const from = selection.from;
@@ -1402,13 +1445,22 @@ function highlightSearchGroup() {
 function reportSearchState(failed = false) {
   if (desktop) call('searchState', { active: !find('#search-panel').hidden, queryLength: find('#search-input').value.length, matches: totalResults, failed }).catch(() => {});
 }
+let searchPaintFrame = null;
+function refreshSearchPresentation() {
+  if (searchPaintFrame !== null) return;
+  searchPaintFrame = requestAnimationFrame(() => {
+    searchPaintFrame = null;
+    sourceEditor.refreshSearch();
+    richEditor.refreshSearch();
+  });
+}
 function invalidateSearch() {
   const painted = results.length > 0;
   results = []; totalResults = 0; selectedResult = -1; resultsRevision = -1;
   find('#search-count').textContent = '0 处';
   find('#search-time').textContent = '';
   for (const action of ['previous', 'next', 'replace', 'replace-all']) find(`#search-panel [data-action="${action}"]`).disabled = true;
-  if (painted) { sourceEditor.refresh(); richEditor.refresh(); }
+  if (painted) refreshSearchPresentation();
   renderSearchResults();
 }
 function scheduleSearch() {
@@ -1437,7 +1489,7 @@ function receiveSearchResults(event) {
   find('#search-count').textContent = totalResults.toLocaleString() + ' 处' + (totalResults > results.length ? ' · 前 ' + results.length : '');
   find('#search-time').textContent = Math.round(event.data.duration) + ' ms';
   for (const action of ['previous', 'next', 'replace', 'replace-all']) find(`#search-panel [data-action="${action}"]`).disabled = !results.length || (action === 'replace-all' && totalResults > results.length);
-  sourceEditor.refresh(); richEditor.refresh();
+  refreshSearchPresentation();
   renderSearchResults();
   reportSearchState();
 }
@@ -1523,7 +1575,7 @@ async function action(name) {
   if (name === 'diagram-close') { find('#diagram-dialog').close(); return; }
   if (name === 'diagram-source') { const edit = diagramEdit; find('#diagram-dialog').close(); edit?.(); return; }
   if (['diagram-zoom-in', 'diagram-zoom-out', 'diagram-fit'].includes(name)) {
-    diagramZoom = name === 'diagram-fit' ? 1 : Math.max(.25, Math.min(4, diagramZoom * (name === 'diagram-zoom-in' ? 1.25 : .8)));
+    diagramZoom = name === 'diagram-fit' ? Math.max(.25, Math.min(4, (find('#diagram-viewport').clientWidth - 40) / (diagramSize?.width || find('#diagram-viewport').clientWidth - 40))) : Math.max(.25, Math.min(4, diagramZoom * (name === 'diagram-zoom-in' ? 1.25 : .8)));
     resizeDiagramPreview(); return;
   }
   if (name === 'new') return newDocument();
@@ -1644,9 +1696,29 @@ document.addEventListener('click', event => {
   if (closeFile) closeDocuments([closeFile.dataset.documentClose]).catch(showError);
 });
 find('#image-input').addEventListener('change', async event => { try { await importImages([...event.target.files]); } catch (error) { showError(error); } event.target.value = ''; });
-find('#diagram-dialog').addEventListener('close', () => { diagramRequest++; diagramEdit = null; find('#diagram-stage').replaceChildren(); });
-new ResizeObserver(resizeDiagramPreview).observe(find('#diagram-viewport'));
+find('#diagram-dialog').addEventListener('close', () => { diagramRequest++; diagramEdit = null; diagramSize = null; find('#diagram-stage').replaceChildren(); });
+new ResizeObserver(() => requestAnimationFrame(resizeDiagramPreview)).observe(find('#diagram-viewport'));
+find('#diagram-viewport').addEventListener('wheel', event => {
+  if (!diagramSize) return;
+  event.preventDefault(); event.stopPropagation();
+  diagramZoom = Math.max(.25, Math.min(4, diagramZoom * Math.exp(-Math.max(-240, Math.min(240, event.deltaY)) * .002)));
+  resizeDiagramPreview();
+}, { passive: false });
+let diagramDrag = null;
+find('#diagram-viewport').addEventListener('pointerdown', event => {
+  if (event.button !== 0 || !diagramSize) return;
+  event.preventDefault();
+  diagramDrag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: event.currentTarget.scrollLeft, top: event.currentTarget.scrollTop };
+  event.currentTarget.setPointerCapture(event.pointerId);
+});
+find('#diagram-viewport').addEventListener('pointermove', event => {
+  if (!diagramDrag || event.pointerId !== diagramDrag.id) return;
+  event.currentTarget.scrollLeft = diagramDrag.left + diagramDrag.x - event.clientX;
+  event.currentTarget.scrollTop = diagramDrag.top + diagramDrag.y - event.clientY;
+});
+for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) find('#diagram-viewport').addEventListener(event, () => { diagramDrag = null; });
 find('#edit-form').addEventListener('submit', event => { event.preventDefault(); dialogApply?.(); find('#edit-dialog').close(); });
+find('#edit-dialog').addEventListener('close', () => { const submit = find('#edit-dialog [type="submit"]'); if (submit) submit.hidden = false; });
 function resetExportConfirmation() {
   exportImageConfirmation = null;
   find('#export-status').textContent = '';

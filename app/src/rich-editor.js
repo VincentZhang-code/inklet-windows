@@ -14,6 +14,23 @@ import { sectionReferencePlugin } from './section-references.js';
 import { isImagePlaceholder, readableImagePath } from './image-references.js';
 import { createElement, Code2, Image as ImageIcon } from 'lucide';
 
+function bindFigureActivation(element, open, edit) {
+  let timer;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  const click = event => {
+    if (event.button !== 0 || event.target.closest('.diagram-code-button')) return;
+    cancel();
+    if (event.detail === 0) { open(); return; }
+    if (event.detail === 1) timer = setTimeout(() => { timer = null; if (element.isConnected) open(); }, 500);
+  };
+  const doubleClick = event => {
+    if (event.target.closest('.diagram-code-button')) return;
+    event.preventDefault(); event.stopPropagation(); cancel(); (edit || open)();
+  };
+  element.addEventListener('click', click); element.addEventListener('dblclick', doubleClick);
+  return () => { cancel(); element.removeEventListener('click', click); element.removeEventListener('dblclick', doubleClick); };
+}
+
 export class RichEditor {
   constructor(element, options) {
     this.options = options;
@@ -49,7 +66,7 @@ export class RichEditor {
         view.focus();
       });
       const open = () => kind === 'mermaid' && dom.dataset.rendered === 'true' ? options.diagram(current.attrs.code, edit) : edit();
-      let controlsObserver;
+      let controlsObserver; let disposeActivation;
       if (kind === 'mermaid') {
         const codeButton = document.createElement('button');
         codeButton.type = 'button'; codeButton.className = 'diagram-code-button icon-button';
@@ -60,7 +77,7 @@ export class RichEditor {
         controlsObserver = new MutationObserver(attachControls);
         controlsObserver.observe(dom, { childList: true });
         attachControls();
-        dom.addEventListener('click', event => { if (!codeButton.contains(event.target)) open(); });
+        disposeActivation = bindFigureActivation(dom, open, edit);
       } else dom.addEventListener('dblclick', edit);
       dom.addEventListener('keydown', event => { if (event.target === dom && (event.key === 'Enter' || (kind === 'mermaid' && event.key === ' '))) { event.preventDefault(); open(); } });
       return {
@@ -71,7 +88,7 @@ export class RichEditor {
           current = next;
           return true;
         },
-        destroy: () => { this.visualViews.delete(refreshTheme); controlsObserver?.disconnect(); dispose(); },
+        destroy: () => { this.visualViews.delete(refreshTheme); controlsObserver?.disconnect(); disposeActivation?.(); dispose(); },
       };
     };
     this.plugins = [
@@ -146,10 +163,13 @@ export class RichEditor {
           dom.title = node.attrs.title || node.attrs.alt || '图片';
           dom.loading = 'lazy';
           dom.decoding = 'async';
-          dom.addEventListener('dblclick', () => options.image(node.attrs.src, node.attrs.alt));
+          dom.classList.add('document-image');
+          const disposeActivation = bindFigureActivation(dom,
+            () => options.image(node.attrs.src, node.attrs.alt),
+            () => options.imageSource ? options.imageSource(node.attrs.src, node.attrs.alt) : options.image(node.attrs.src, node.attrs.alt));
           dom.addEventListener('error', () => { dom.classList.add('image-missing'); dom.alt = '图片不可用: ' + (node.attrs.alt || node.attrs.src); options.imageError?.(node.attrs.src, dom); });
           dom.addEventListener('load', () => { dom.classList.remove('image-missing'); dom.alt = node.attrs.alt || '图片'; options.imageLoaded?.(node.attrs.src, dom); });
-          return { dom };
+          return { dom, destroy: disposeActivation };
         },
       },
       dispatchTransaction: transaction => this.dispatch(transaction),
@@ -193,8 +213,23 @@ export class RichEditor {
 
   destroy() { this.tables.destroy(); this.disposeHighlighting(); clearTimeout(this.timer); this.view.destroy(); }
   decorations(state) {
-    const output = [];
     if (!this.parsed || !state.doc.eq(this.parsed.doc)) return DecorationSet.empty;
+    const marks = this.options.marks();
+    const cached = this.decorationCache;
+    if (!cached || cached.doc !== state.doc || cached.parsed !== this.parsed || cached.marks !== marks || !cached.selection.eq(state.selection)) {
+      this.decorationCache = { doc: state.doc, parsed: this.parsed, marks, selection: state.selection, decorations: this.documentDecorations(state, marks) };
+    }
+    const matches = [];
+    for (const match of this.options.matches()) {
+      const from = prosePosition(this.parsed, match.from);
+      const to = prosePosition(this.parsed, match.to);
+      if (from < to) matches.push(Decoration.inline(from, to, { class: 'search-match' }));
+    }
+    return matches.length ? this.decorationCache.decorations.add(state.doc, matches) : this.decorationCache.decorations;
+  }
+
+  documentDecorations(state, marks) {
+    const output = [];
     for (const heading of documentHeadings(state.doc)) {
       const node = state.doc.nodeAt(heading.position);
       output.push(Decoration.node(heading.position, heading.position + node.nodeSize, { id: heading.id }));
@@ -213,15 +248,10 @@ export class RichEditor {
       for (const span of codeSpans(node.textContent, language)) output.push(Decoration.inline(position + 1 + span.from, position + 1 + span.to, { class: span.className }));
       return false;
     });
-    for (const mark of this.options.marks()) {
+    for (const mark of marks) {
       const from = prosePosition(this.parsed, mark.from);
       const to = prosePosition(this.parsed, mark.to);
       if (from < to) output.push(Decoration.inline(from, to, { class: 'reading-highlight', style: highlightStyle(mark) }));
-    }
-    for (const match of this.options.matches()) {
-      const from = prosePosition(this.parsed, match.from);
-      const to = prosePosition(this.parsed, match.to);
-      if (from < to) output.push(Decoration.inline(from, to, { class: 'search-match' }));
     }
     const active = this.parsed.ranges.find(range => state.selection.from >= range.position && state.selection.from <= range.end);
     if (active) output.push(Decoration.node(active.position, active.end, { 'data-active': 'true' }));
@@ -274,7 +304,8 @@ export class RichEditor {
     this.refreshContents();
     this.options.parsed?.(this.parsed.doc);
   }
-  refresh() { this.view.updateState(this.view.state); for (const refresh of this.visualViews) refresh(); }
+  refreshSearch() { this.view.updateState(this.view.state); }
+  refresh() { this.decorationCache = null; this.view.updateState(this.view.state); for (const refresh of this.visualViews) refresh(); }
   focus() { this.view.focus(); }
   reveal(from, to = from, select = true, scroll = true) {
     this.flush();

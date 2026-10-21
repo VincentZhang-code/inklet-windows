@@ -1,6 +1,6 @@
 {
   "project": "Inklet for Windows",
-  "version": "0.11.3",
+  "version": "0.11.4",
   "license": "MIT",
   "files": [
     {
@@ -21,12 +21,12 @@
     {
       "path": "app/package-lock.json",
       "bytes": 126915,
-      "sha256": "09044565cc6886c87e09cd4bafb5a3391414c28da074289454e67f5d47f9983e"
+      "sha256": "4607da089879b51242a1de60821d713f3f95453cb282c6acfa9ed34b3631714c"
     },
     {
       "path": "app/package.json",
       "bytes": 1526,
-      "sha256": "82013edca5abb831460f902de8e2e6e27e3c2f6a986e634b544c79011c1c3ae9"
+      "sha256": "8597e61cf777f1d10899410afa42770e66ab74b57cde70ad5d55bac0673ccd62"
     },
     {
       "path": "app/public/favicon.svg",
@@ -115,13 +115,13 @@
     },
     {
       "path": "app/src/inklet.css",
-      "bytes": 60511,
-      "sha256": "14884c2f3df2b43c37de144335c6c11977092196942c0de97a18a6fcb29539b6"
+      "bytes": 60807,
+      "sha256": "ab0174d49d5965f8f3a15f0b2e9052ad1327d0623028c77d20d055891e7f975c"
     },
     {
       "path": "app/src/inklet.js",
-      "bytes": 131767,
-      "sha256": "55296ab4a70d1ee01a70ce9c774ef70c0000c0f439931dc27df67b1b8744e0ec"
+      "bytes": 136339,
+      "sha256": "39c288143e5e88ba132fd43ff29d7066bf5598910ac44e905ca398e6f96fa2c3"
     },
     {
       "path": "app/src/main.js",
@@ -150,8 +150,8 @@
     },
     {
       "path": "app/src/rich-editor.js",
-      "bytes": 18361,
-      "sha256": "225f57e6428bea1f91ef2fd16691acd4166fa413965cd3305074a8b924f3a4f8"
+      "bytes": 20134,
+      "sha256": "d82ca7eecaa2e9ec5c8ed0a2dd6f3a37100322b264e61d6bf66a977e75d2561a"
     },
     {
       "path": "app/src/sample.js",
@@ -180,8 +180,8 @@
     },
     {
       "path": "app/src/source-editor.js",
-      "bytes": 7750,
-      "sha256": "1cd8b709821f9b10823c563252a410edc281450acf5e2750bf0f8c5d7508dbd3"
+      "bytes": 8286,
+      "sha256": "74b0c7ed212fc7e1a1ed4a618cc9e212f3dc93b4ab02a13608a99100b6e6cff4"
     },
     {
       "path": "app/src/style.css",
@@ -1536,7 +1536,7 @@
     {
       "path": "native/InkletApp.cs",
       "bytes": 48277,
-      "sha256": "25fd163d989fffbcade484276caa3e2a8f317c2499528b3910468e283dfa0ae5"
+      "sha256": "28d58b6d61a47ce9241e7709a6fb07569ddd9ad5d33c57ad7f0ab729824f635a"
     },
     {
       "path": "native/OpenHistory.cs",
@@ -1565,13 +1565,13 @@
     },
     {
       "path": "QUICKSTART.md",
-      "bytes": 1386,
-      "sha256": "6ced7278e5f3f37fb92435f4db56bd46cec9e1a4859d9e8234fc0f69c6fd4088"
+      "bytes": 1807,
+      "sha256": "550551d6df02ea3d802278b440ab6d4f1242788435cd1a779cf47e3f5e8a2c5c"
     },
     {
       "path": "README.md",
-      "bytes": 16341,
-      "sha256": "d805909e2ad2a89dd4be1eed2d10a3fd4bff1492f1a896fdd1ffc41c62c8a2d4"
+      "bytes": 17332,
+      "sha256": "8fe413fb52fb9ec0d005ecf71f2cd7931a0604632597d6e21c3fdea3463538e3"
     },
     {
       "path": "tools/bootstrap.ps1",
@@ -1594,5 +1594,5 @@
       "sha256": "a6809f27347baa064b5b602062f1054505425dffcef1e4491a437e92d805855e"
     }
   ],
-  "totalBytes": 3557916
+  "totalBytes": 3566505
 }

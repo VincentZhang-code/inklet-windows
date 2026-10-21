@@ -9,6 +9,7 @@ import { highlightColors } from '../../core/document.mjs';
 import { codeSpans, codeStyle, normalizeLanguage, onCodeHighlightingReady } from './code-highlighting.js';
 
 const synchronized = Annotation.define();
+const searchRefresh = Annotation.define();
 const darkHighlightStyle = HighlightStyle.define([
   { tag: tags.heading, color: '#c0daca', fontWeight: 'bold' },
   { tag: [tags.keyword, tags.modifier], color: '#e7a9c4' },
@@ -31,8 +32,11 @@ export class SourceEditor {
     this.syntaxTheme = new Compartment();
     this.dark = !!options.dark?.();
     const decorated = ViewPlugin.fromClass(class {
-      constructor(view) { this.decorations = this.build(view); }
-      update(update) { this.decorations = this.build(update.view); }
+      constructor(view) { this.base = this.build(view); this.decorations = this.search(view); }
+      update(update) {
+        if (update.docChanged || update.viewportChanged || !update.transactions.some(transaction => transaction.annotation(searchRefresh))) this.base = this.build(update.view);
+        this.decorations = this.search(update.view);
+      }
       build(view) {
         const ranges = [];
         const decoratedLines = new Set();
@@ -65,13 +69,17 @@ export class SourceEditor {
             const to = Math.min(mark.to, visible.to);
             if (from < to) ranges.push(Decoration.mark({ attributes: { style: highlightStyle(mark) }, class: 'reading-highlight' }).range(from, to));
           }
-          for (const match of options.matches()) {
-            const from = Math.max(match.from, visible.from);
-            const to = Math.min(match.to, visible.to);
-            if (from < to) ranges.push(Decoration.mark({ class: 'search-match' }).range(from, to));
-          }
         }
         return Decoration.set(ranges, true);
+      }
+      search(view) {
+        const ranges = [];
+        for (const visible of view.visibleRanges) for (const match of options.matches()) {
+          const from = Math.max(match.from, visible.from);
+          const to = Math.min(match.to, visible.to);
+          if (from < to) ranges.push(Decoration.mark({ class: 'search-match' }).range(from, to));
+        }
+        return ranges.length ? this.base.update({ add: ranges, sort: true }) : this.base;
       }
     }, { decorations: value => value.decorations });
     this.view = new EditorView({
@@ -113,6 +121,7 @@ export class SourceEditor {
   destroy() { this.disposeHighlighting(); this.view.destroy(); }
   replace(change) { this.view.dispatch({ changes: change, annotations: synchronized.of(true) }); }
   setText(text) { this.replace({ from: 0, to: this.view.state.doc.length, insert: text }); }
+  refreshSearch() { this.view.dispatch({ annotations: searchRefresh.of(true) }); }
   refresh() {
     const dark = !!this.options.dark?.();
     if (dark === this.dark) this.view.dispatch({});
